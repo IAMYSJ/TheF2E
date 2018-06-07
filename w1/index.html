@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>首頁</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="images/favicon.ico" rel="shortcut icon">
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4"
+    crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp"
+    crossorigin="anonymous">
+  <link rel="stylesheet" href="stylesheet/main.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+</head>
+
+<body class="bg-light">
+  <div class="container">
+    <div class="row">
+      <div class="col-2"></div>
+
+      <div class="col-8 mt-5" id="app">
+        <nav class="nav nav-pills nav-justified">
+          <a class="nav-item nav-link" href="#" :class="{'active':visibility==='all'}" @click="visibility='all'">全部</a>
+          <a class="nav-item nav-link" href="#" :class="{'active':visibility==='active'}" @click="visibility='active'">執行中</a>
+          <a class="nav-item nav-link" href="#" :class="{'active':visibility==='completed'}" @click="visibility='completed'">已完成</a>
+        </nav>
+
+        <div>
+
+          <div class="input-group mb-3 mt-3">
+            <input type="text" class="form-control" placeholder="+ 新增代辦事項" v-model="newTodo" @keyup.enter="createTodo()">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" @click="createTodo()">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="input-group mb-3" v-for="(item, key) in filterTodos">
+            <div class="input-group-prepend">
+              <!-- <button class="btn btn-outline-secondary" type="button" @click="deleteTodo(key)">
+                  <i class="fas fa-bars"></i>
+                </button> -->
+              <div class="input-group-text">
+                <input type="checkbox" v-model="item.completed" :id="item.id" @click="complete(item)">
+              </div>
+            </div>
+            <input type="text" class="form-control" :class="{'completed':item.completed, 'border-warning':item.isImportant}" v-model="item.title"
+              :readonly="item.isEdit===false" @keyup.enter="confirmEdit(item)" @keyup.esc="cancleEdit(item)">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" @click="item.isEditDate=!item.isEditDate">
+                <i class="fas fa-calendar-alt"></i>
+                <span>{{ item.alertDate }}</span>
+              </button>
+              <input type="date" :id="key" :value="item.alertDate" :class="{'hidden':!item.isEditDate}" @keyup.esc="item.isEditDate=false"
+                @keyup.enter="editAlert(item, key)">
+              <button class="btn btn-outline-secondary" type="button" @click="important(item)">
+                <i class="far fa-star" :class="{'fas fa-star':item.isImportant}"></i>
+              </button>
+              <button class="btn btn-outline-secondary" type="button" @click="updateTodo(item, key)">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-outline-secondary" type="button" @click="deleteTodo(key)">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <p class="float-left">
+              目前還有 {{ notCompleted }} 筆未完成。
+            </p>
+            <p class="float-right">
+              <a href="#" @click="clearAll()">清除全部</a>
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="col-2"></div>
+    </div>
+  </div>
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        newTodo: '',
+        todos: [],
+        visibility: 'all',
+        cacheTodo: '',
+        cacheTitle: '',
+      },
+      created() {
+        for (var i = 0; i < localStorage.length; i++) {
+          this.todos.push(JSON.parse(localStorage.getItem(localStorage.key(i))));
+        }
+      },
+      methods: {
+        createTodo: function () {
+          if (this.newTodo.trim() === '') { return; }
+          this.todos.push({
+            id: Math.floor(Date.now()),
+            title: this.newTodo.trim(),
+            completed: false,
+            isEdit: false,
+            isImportant: false,
+            isEditDate: false,
+            alertDate: '',
+          });
+          localStorage.setItem(this.todos[this.todos.length - 1].id, JSON.stringify(this.todos[this.todos.length - 1]));
+          this.newTodo = '';
+        },
+        updateTodo: function (item, key) {
+          item.isEdit = true;
+          this.cacheTodo = item;
+          this.cacheTitle = item.title;
+        },
+        confirmEdit: function (item) {
+          item.isEdit = false;
+          item.title = item.title;
+          localStorage.setItem(item.id, JSON.stringify(item));
+        },
+        cancleEdit: function (item) {
+          item.isEdit = false;
+          item.title = this.cacheTitle;
+          this.cacheTodo = '';
+          this.cacheTitle = ''
+        },
+        complete: function (item) {
+          item.completed = !item.completed;
+          localStorage.setItem(item.id, JSON.stringify(item));
+        },
+        deleteTodo: function (key) {
+          localStorage.removeItem(localStorage.key(key));
+          this.todos.splice(key, 1);
+        },
+        clearAll: function () {
+          this.todos = [];
+          localStorage.clear();
+        },
+        editAlert: function (item, key) {
+          item.alertDate = document.getElementById(key).value;
+          item.isEditDate = false;
+          localStorage.setItem(item.id, JSON.stringify(item));
+        },
+        important: function (item) {
+          item.isImportant = !item.isImportant;
+          localStorage.setItem(item.id, JSON.stringify(item));
+        },
+        formatTime: function (item) {
+          var dates = new Date(item.alertDate);
+          var year = dates.getFullYear();
+          var month = dates.getMonth() + 1;
+          var date = dates.getDate();
+          var hours = dates.getHours();
+          var minutes = dates.getMinutes();
+          var seconds = dates.getSeconds();
+          return `${year}/${month}/${date} ${hours}:${minutes}:${seconds}`
+        }
+      },
+      computed: {
+        notCompleted: function () {
+          return this.todos.filter(item => item.completed === false).length;
+        },
+        filterTodos: function () {
+          if (this.visibility === 'all') {
+            return this.todos;
+          } else if (this.visibility === 'active') {
+            return this.todos.filter(item => item.completed === false);
+          } else if (this.visibility === 'completed') {
+            return this.todos.filter(item => item.completed === true);
+          }
+        }
+      },
+    });
+  </script>
+</body>
+
+</html>
