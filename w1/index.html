@@ -26,57 +26,63 @@
           <a class="nav-item nav-link" href="#" :class="{'active':visibility==='completed'}" @click="visibility='completed'">已完成</a>
         </nav>
 
-        <div>
 
-          <div class="input-group mb-3 mt-3">
-            <input type="text" class="form-control" placeholder="+ 新增代辦事項" v-model="newTodo" @keyup.enter="createTodo()">
-            <div class="input-group-append">
-              <button class="btn btn-outline-secondary" type="button" @click="createTodo()">
-                <i class="fas fa-plus"></i>
-              </button>
-            </div>
+        <div class="input-group mb-3 mt-3">
+          <input type="text" class="form-control" placeholder="+ 新增代辦事項" v-model="newTodo" @keyup.enter="createTodo()">
+          <div class="input-group-append">
+            <button class="btn btn-outline-secondary" type="button" @click="createTodo()">
+              <i class="fas fa-plus"></i>
+            </button>
           </div>
+        </div>
 
-          <div class="input-group mb-3" v-for="(item, key) in filterTodos">
-            <div class="input-group-prepend">
-              <!-- <button class="btn btn-outline-secondary" type="button" @click="deleteTodo(key)">
-                  <i class="fas fa-bars"></i>
-                </button> -->
-              <div class="input-group-text">
+        <div class="containe-fluidr" v-for="(item, key) in filterTodos">
+          <div class="row alert alert-secondary" :class="{'alert alert-warning':item.isImportant}">
+
+            <div class="col-1">
+              <div class="m-2">
                 <input type="checkbox" v-model="item.completed" :id="item.id" @click="complete(item)">
               </div>
             </div>
-            <input type="text" class="form-control" :class="{'completed':item.completed, 'border-warning':item.isImportant}" v-model="item.title"
-              :readonly="item.isEdit===false" @keyup.enter="confirmEdit(item)" @keyup.esc="cancleEdit(item)">
-            <div class="input-group-append">
-              <button class="btn btn-outline-secondary" type="button" @click="item.isEditDate=!item.isEditDate">
-                <i class="fas fa-calendar-alt"></i>
-                <span>{{ item.alertDate }}</span>
-              </button>
-              <input type="date" :id="key" :value="item.alertDate" :class="{'hidden':!item.isEditDate}" @keyup.esc="item.isEditDate=false"
-                @keyup.enter="editAlert(item, key)">
-              <button class="btn btn-outline-secondary" type="button" @click="important(item)">
-                <i class="far fa-star" :class="{'fas fa-star':item.isImportant}"></i>
-              </button>
-              <button class="btn btn-outline-secondary" type="button" @click="updateTodo(item, key)">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button class="btn btn-outline-secondary" type="button" @click="deleteTodo(key)">
-                <i class="fas fa-times"></i>
-              </button>
+
+            <div class="col-6">
+              <h3 class="w-100" v-if="item.id !== cacheTodo.id" :class="{'completed':item.completed}">{{ item.title }}</h3>
+              <input class="w-100" id="cacheTitle" type="text" v-model="cacheTitle" v-if="item.id === cacheTodo.id" @keyup.enter="confirmEdit(item)"
+                @keyup.esc="cancleEdit(item)">
             </div>
-          </div>
 
-          <div>
-            <p class="float-left">
-              目前還有 {{ notCompleted }} 筆未完成。
-            </p>
-            <p class="float-right">
-              <a href="#" @click="clearAll()">清除全部</a>
-            </p>
-          </div>
+            <div class="col-5">
+              <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" @click="item.isEditDate=!item.isEditDate">
+                  <i class="fas fa-calendar-alt"></i>
+                  <span>{{ item.alertDate }}</span>
+                </button>
+                <input class="w-50" type="date" :id="key" :value="item.alertDate" :class="{'hidden':!item.isEditDate}" @keyup.esc="item.isEditDate=false"
+                  @keyup.enter="editAlert(item, key)">
+                <button class="btn btn-outline-secondary" type="button" @click="important(item)">
+                  <i class="far fa-star" :class="{'fas fa-star':item.isImportant}"></i>
+                </button>
+                <button class="btn btn-outline-secondary" type="button" @click="updateTodo(item)">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-outline-secondary" type="button" @click="deleteTodo(key)">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
 
+          </div>
         </div>
+
+        <div>
+          <p class="float-left">
+            目前還有 {{ notCompleted }} 筆未完成。
+          </p>
+          <p class="float-right">
+            <a href="#" @click="clearAll()">清除全部</a>
+          </p>
+        </div>
+
       </div>
 
       <div class="col-2"></div>
@@ -104,7 +110,6 @@
             id: Math.floor(Date.now()),
             title: this.newTodo.trim(),
             completed: false,
-            isEdit: false,
             isImportant: false,
             isEditDate: false,
             alertDate: '',
@@ -112,21 +117,20 @@
           localStorage.setItem(this.todos[this.todos.length - 1].id, JSON.stringify(this.todos[this.todos.length - 1]));
           this.newTodo = '';
         },
-        updateTodo: function (item, key) {
-          item.isEdit = true;
-          this.cacheTodo = item;
-          this.cacheTitle = item.title;
+        updateTodo: function (item) {
+          this.cacheTodo = (this.cacheTodo === item) ? "" : item;
+          this.cacheTitle = (this.cacheTitle === item.title) ? "" : item.title;
         },
         confirmEdit: function (item) {
-          item.isEdit = false;
-          item.title = item.title;
+          item.title = this.cacheTitle;
           localStorage.setItem(item.id, JSON.stringify(item));
+          this.cacheTodo = '';
+          this.cacheTitle = '';
         },
         cancleEdit: function (item) {
-          item.isEdit = false;
           item.title = this.cacheTitle;
           this.cacheTodo = '';
-          this.cacheTitle = ''
+          this.cacheTitle = '';
         },
         complete: function (item) {
           item.completed = !item.completed;
