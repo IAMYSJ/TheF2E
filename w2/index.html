@@ -16,21 +16,49 @@
 </head>
 
 <body class="bg-light">
-    <div class="container-fluid">
+    <div class="container">
+        <div class="row">
+            <h1>Kaohsiung Fun</h1>
+        </div>
         <div id="app" class="row">
             <div class="col-3">
-                <h1>Kaohsiung Fun</h1>
-                <hr>
                 <div>
                     <h3>行政區</h3>
-                    <select>
-                        <option disabled selected>-- 請選擇 --</option>
-                        <option v-for="zone in zones">{{ zone }}</option>
-                    </select>
-
+                    <div v-for="(zone, key) in zones">
+                        <input type="checkbox" v-model="isCheck[key]" @click="addTag(zone, key)"> {{ zone }}
+                    </div>
                 </div>
             </div>
             <div class="col-9">
+                <h2>搜尋筆數 {{ filterViews.length }} 筆</h2>
+                <div>
+                    <label class="border border-dark mr-3 pl-3" v-for="(tag) in filterZones">{{ tag }}
+                        <button class="btn btn-link" @click="removeTag(tag)">
+                            <i class="far fa-times-circle"></i>
+                        </button>
+                    </label>
+                </div>
+                <div class="container" v-for="view in filterViews">
+                    <div class="row">
+                        <div class="col-4">
+                            <img :src="view.Picture1" class="img-fluid">
+                        </div>
+                        <div class="col-8">
+                            <p class="font-weight-bold">名稱：{{ view.Name }}</p>
+                            <p class="font-weight-bold">地址：{{ view.Add }}</p>
+                            <p class="font-weight-bold">開放時間：{{ view.Opentime }}</p>
+                            <p class="font-weight-bold" v-if="view.Ticketinfo !== ''">門票：{{ view.Ticketinfo }}</p>
+                            <p class="font-weight-bold">電話：{{ view.Tel }}</p>
+                            <p class="font-weight-bold" v-if="view.Website !== ''">網站：
+                                <a href="view.Website">{{ view.Website }}</a>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <p class="font-weight-light">{{ view.Description }}</p>
+                    </div>
+                    <hr>
+                </div>
             </div>
         </div>
     </div>
@@ -40,21 +68,65 @@
             el: "#app",
             data: {
                 views: [],
+                filterViews: [],
                 zones: [],
+                filterZones: [],
+                isCheck: [],
             },
             created: function () {
                 const url = "https://data.kcg.gov.tw/api/action/datastore_search?resource_id=92290ee5-6e61-456f-80c0-249eae2fcc97";
                 fetch(url).then(res => res.json()).then(data => {
                     console.log(data.result.records);
                     this.views = data.result.records;
+                    this.filterViews = this.views;
                     this.zones = data.result.records.map(item => {
                         return item.Zone;
                     }).filter((zone, index, arr) => {
-                        return arr.indexOf(zone) === index; 
+                        return arr.indexOf(zone) === index;
+                    });
+                    data.result.records.forEach(item => {
+                        this.isCheck.push(false)
                     });
                 });
-
+                console.log(this.isCheck);
             },
+            methods: {
+                addTag: function (zone, key) {
+                    if (!this.filterZones.includes(zone)) {
+                        this.isCheck[key] = true;
+                        this.filterZones.push(zone);
+                        this.filterViews = this.views.filter(item => {
+                            if (this.filterZones.includes(item.Zone)) {
+                                return item;
+                            }
+                        });
+                    } else {
+                        this.isCheck[key] = false;
+                        this.filterZones.splice(this.filterZones.indexOf(zone), 1);
+                        this.filterViews = this.filterViews.filter(item => {
+                            if (this.filterZones.includes(item.Zone)) {
+                                return item;
+                            }
+                        });
+                        if (this.filterViews.length === 0) {
+                            this.filterViews = this.views;
+                        }
+                    }
+
+                },
+                removeTag: function (tag) {
+                    this.isCheck[this.zones.indexOf(tag)] = false;
+                    this.filterZones.splice(this.filterZones.indexOf(tag), 1);
+                    this.filterViews = this.filterViews.filter(item => {
+                        if (this.filterZones.includes(item.Zone)) {
+                            return item;
+                        }
+                    });
+                    if (this.filterViews.length === 0) {
+                        this.filterViews = this.views;
+                    }
+                }
+            }
         });
     </script>
 
